@@ -45,7 +45,6 @@ func SelectAuthenticator(att string, rrk *bool, uv string) p.AuthenticatorSelect
 func (a *Authenticator) UpdateCounter(authDataCount uint32) {
 	if authDataCount <= a.SignCount && (authDataCount != 0 || a.SignCount != 0) {
 		a.CloneWarning = true
-		// TODO @glacuesta this return must be commented and test fixed
 		return
 	}
 	a.SignCount = authDataCount

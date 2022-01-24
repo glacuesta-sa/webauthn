@@ -128,10 +128,7 @@ func (webauthn *WebAuthn) CreateCredential(user User, session SessionData, parse
 		return nil, protocol.ErrBadRequest.WithDetails("ID mismatch for User and Session")
 	}
 
-	// TODO @glacuesta TBD
-	// shouldVerifyUser := session.UserVerification == protocol.VerificationRequired
-	shouldVerifyUser := webauthn.Config.AuthenticatorSelection.UserVerification == protocol.VerificationRequired
-
+	shouldVerifyUser := session.UserVerification == protocol.VerificationRequired
 	invalidErr := parsedResponse.Verify(session.Challenge, shouldVerifyUser, webauthn.Config.RPID, webauthn.Config.RPOrigin)
 	if invalidErr != nil {
 		return nil, invalidErr
