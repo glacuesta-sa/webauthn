@@ -128,11 +128,9 @@ func verifyU2FFormat(att AttestationObject, clientDataHash []byte) (string, []in
 	// Step 6. Verify the sig using verificationData and certificate public key per SEC1[https://www.w3.org/TR/webauthn/#biblio-sec1].
 	sigErr := attCert.CheckSignature(x509.ECDSAWithSHA256, verificationData.Bytes(), signature)
 	if sigErr != nil {
-		// this was changed from because was panicking
-		//return u2fAttestationKey, nil, sigErr
-		return u2fAttestationKey, nil, ErrAttestation.WithDetails("x509: ECDSA verification failure")
+		return u2fAttestationKey, nil, ErrAttestation.WithDetails(sigErr.Error())
 	}
 
 	// Step 7. If successful, return attestation type Basic with the attestation trust path set to x5c.
-	return "Fido U2F Basic", x5c, sigErr
+	return "Fido U2F Basic", x5c, nil
 }

@@ -113,7 +113,7 @@ func (webauthn *WebAuthn) ValidateLogin(user User, session SessionData, parsedRe
 		rawID, _ = base64.RawURLEncoding.DecodeString(parsedResponse.ParsedPublicKeyCredential.ParsedCredential.ID)
 	}
 
-	// NON-NORMATIVE Prior Step: Verify that the allowCredentials for the sesssion are owned by the user provided
+	// NON-NORMATIVE Prior Step: Verify that the allowCredentials for the session are owned by the user provided
 	userCredentials := user.WebAuthnCredentials()
 	var credentialFound bool
 	if len(session.AllowedCredentialIDs) > 0 {

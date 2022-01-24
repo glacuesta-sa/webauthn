@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	//"github.com/duo-labs/webauthn/metadata"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/mitchellh/mapstructure"
 )
@@ -73,12 +72,23 @@ func verifySafetyNetFormat(att AttestationObject, clientDataHash []byte) (string
 
 	token, err := jwt.Parse(string(response), func(token *jwt.Token) (interface{}, error) {
 		chain := token.Header["x5c"].([]interface{})
+
+		// x5c cannot be empty
 		if len(chain) == 0 {
 			return nil, ErrInvalidAttestation.WithDetails("x5c header is empty")
 		}
+
 		o := make([]byte, base64.StdEncoding.DecodedLen(len(chain[0].(string))))
 		n, err := base64.StdEncoding.Decode(o, []byte(chain[0].(string)))
+		if err != nil {
+			return nil, err
+		}
+
 		cert, err := x509.ParseCertificate(o[:n])
+		if err != nil {
+			return nil, err
+		}
+
 		return cert.PublicKey, err
 	})
 	if err != nil {
@@ -135,10 +145,8 @@ func verifySafetyNetFormat(att AttestationObject, clientDataHash []byte) (string
 		// TODO: Make this user configurable
 		msg := "SafetyNet response with timestamp before one minute ago"
 
-		// TODO @glacuesta why is this conditional here?
+		// TODO @glacuesta
 		// conformance tools asks timestampMs older than 1 minute throw an error
-		// Server-ServerAuthenticatorAttestationResponse-Resp-B
-		// 	-> Test F-7
 		//if metadata.Conformance {
 		return "Basic attestation with SafetyNet", nil, ErrInvalidAttestation.WithDetails(msg)
 		//}
