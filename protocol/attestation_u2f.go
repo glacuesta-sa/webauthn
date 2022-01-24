@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/x509"
+
 	"github.com/duo-labs/webauthn/protocol/webauthncbor"
 
 	"github.com/duo-labs/webauthn/protocol/webauthncose"
@@ -127,7 +128,9 @@ func verifyU2FFormat(att AttestationObject, clientDataHash []byte) (string, []in
 	// Step 6. Verify the sig using verificationData and certificate public key per SEC1[https://www.w3.org/TR/webauthn/#biblio-sec1].
 	sigErr := attCert.CheckSignature(x509.ECDSAWithSHA256, verificationData.Bytes(), signature)
 	if sigErr != nil {
-		return u2fAttestationKey, nil, sigErr
+		// this was changed from because was panicking
+		//return u2fAttestationKey, nil, sigErr
+		return u2fAttestationKey, nil, ErrAttestation.WithDetails("x509: ECDSA verification failure")
 	}
 
 	// Step 7. If successful, return attestation type Basic with the attestation trust path set to x5c.

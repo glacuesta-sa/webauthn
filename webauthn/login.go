@@ -108,8 +108,12 @@ func (webauthn *WebAuthn) ValidateLogin(user User, session SessionData, parsedRe
 	// Step 1. If the allowCredentials option was given when this authentication ceremony was initiated,
 	// verify that credential.id identifies one of the public key credentials that were listed in
 	// allowCredentials.
+	rawID := parsedResponse.RawID
+	if rawID == nil {
+		rawID, _ = base64.RawURLEncoding.DecodeString(parsedResponse.ParsedPublicKeyCredential.ParsedCredential.ID)
+	}
 
-	// NON-NORMATIVE Prior Step: Verify that the allowCredentials for the session are owned by the user provided
+	// NON-NORMATIVE Prior Step: Verify that the allowCredentials for the sesssion are owned by the user provided
 	userCredentials := user.WebAuthnCredentials()
 	var credentialFound bool
 	if len(session.AllowedCredentialIDs) > 0 {
@@ -126,8 +130,10 @@ func (webauthn *WebAuthn) ValidateLogin(user User, session SessionData, parsedRe
 		if !credentialsOwned {
 			return nil, protocol.ErrBadRequest.WithDetails("User does not own all credentials from the allowedCredentialList")
 		}
+
 		for _, allowedCredentialID := range session.AllowedCredentialIDs {
-			if bytes.Equal(parsedResponse.RawID, allowedCredentialID) {
+
+			if bytes.Equal(rawID, allowedCredentialID) {
 				credentialFound = true
 				break
 			}
@@ -153,7 +159,7 @@ func (webauthn *WebAuthn) ValidateLogin(user User, session SessionData, parsedRe
 	// for your use case), look up the corresponding credential public key.
 	var loginCredential Credential
 	for _, cred := range userCredentials {
-		if bytes.Equal(cred.ID, parsedResponse.RawID) {
+		if bytes.Equal(cred.ID, rawID) {
 			loginCredential = cred
 			credentialFound = true
 			break

@@ -24,11 +24,11 @@ var Metadata = make(map[uuid.UUID]MetadataTOCPayloadEntry)
 var Conformance = false
 
 // AuthenticatorAttestationType - The ATTESTATION constants are 16 bit long integers indicating the specific attestation that authenticator supports.
-type AuthenticatorAttestationType uint16
+type AuthenticatorAttestationType string
 
 const (
 	// BasicFull - Indicates full basic attestation, based on an attestation private key shared among a class of authenticators (e.g. same model). Authenticators must provide its attestation signature during the registration process for the same reason. The attestation trust anchor is shared with FIDO Servers out of band (as part of the Metadata). This sharing process shouldt be done according to [UAFMetadataService].
-	BasicFull AuthenticatorAttestationType = 0x3E07
+	BasicFull AuthenticatorAttestationType = "basic_full"
 	// BasicSurrogate - Just syntactically a Basic Attestation. The attestation object self-signed, i.e. it is signed using the UAuth.priv key, i.e. the key corresponding to the UAuth.pub key included in the attestation object. As a consequence it does not provide a cryptographic proof of the security characteristics. But it is the best thing we can do if the authenticator is not able to have an attestation private key.
 	BasicSurrogate
 	// Ecdaa - Indicates use of elliptic curve based direct anonymous attestation as defined in [FIDOEcdaaAlgorithm]. Support for this attestation type is optional at this time. It might be required by FIDO Certification.
@@ -333,7 +333,10 @@ type MetadataStatement struct {
 	// The list of public key formats supported by the authenticator during registration operations.
 	PublicKeyAlgAndEncodings []uint16 `json:"publicKeyAlgAndEncodings"`
 	// The supported attestation type(s).
-	AttestationTypes []uint16 `json:"attestationTypes"`
+	// TODO @glacuesta there are other fields that need to be converted to string such as
+	// authenticationAlgorithms, publicKeyAlgAndEncodings, userVertificationDetails, etc
+	// more info medium.com/webauthnworks/webauthn-fido2-whats-new-in-mds3-migrating-from-mds2-to-mds3-a271d82cb774
+	AttestationTypes []string `json:"attestationTypes"`
 	// A list of alternative VerificationMethodANDCombinations.
 	UserVerificationDetails [][]VerificationMethodDescriptor `json:"userVerificationDetails"`
 	// A 16-bit number representing the bit fields defined by the KEY_PROTECTION constants in the FIDO Registry of Predefined Values
