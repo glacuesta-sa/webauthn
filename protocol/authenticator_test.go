@@ -225,6 +225,7 @@ func TestAuthenticatorData_unmarshalAttestedData(t *testing.T) {
 				AttData:  tt.fields.AttData,
 				ExtData:  tt.fields.ExtData,
 			}
+
 			if err := a.unmarshalAttestedData(tt.args.rawAuthData); (err != nil) != tt.wantErr {
 				t.Errorf("AuthenticatorData.unmarshalAttestedData() error = %v, wantErr %v", err, tt.wantErr)
 			}

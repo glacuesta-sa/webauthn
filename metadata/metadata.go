@@ -228,7 +228,7 @@ type PatternAccuracyDescriptor struct {
 // VerificationMethodDescriptor - A descriptor for a specific base user verification method as implemented by the authenticator.
 type VerificationMethodDescriptor struct {
 	// a single USER_VERIFY constant (see [FIDORegistry]), not a bit flag combination. This value MUST be non-zero.
-	UserVerification uint32 `json:"userVerification"`
+	UserVerification string `json:"userVerification"`
 	// May optionally be used in the case of method USER_VERIFY_PASSCODE.
 	CaDesc CodeAccuracyDescriptor `json:"caDesc"`
 	// May optionally be used in the case of method USER_VERIFY_FINGERPRINT, USER_VERIFY_VOICEPRINT, USER_VERIFY_FACEPRINT, USER_VERIFY_EYEPRINT, or USER_VERIFY_HANDPRINT.
@@ -317,21 +317,17 @@ type MetadataStatement struct {
 	// A list of human-readable short descriptions of the authenticator in different languages.
 	AlternativeDescriptions map[string]string `json:"alternativeDescriptions"`
 	// Earliest (i.e. lowest) trustworthy authenticatorVersion meeting the requirements specified in this metadata statement.
-	AuthenticatorVersion uint16 `json:"authenticatorVersion"`
+	AuthenticatorVersion uint32 `json:"authenticatorVersion"`
 	// The FIDO protocol family. The values "uaf", "u2f", and "fido2" are supported.
 	ProtocolFamily string `json:"protocolFamily"`
+	// schema — Numerical identifier of the schema. Use this to check if you are dealing with old or new metadata.
+	Schema uint16 `json:"schema"`
 	// The FIDO unified protocol version(s) (related to the specific protocol family) supported by this authenticator.
 	Upv []Version `json:"upv"`
-	// The assertion scheme supported by the authenticator.
-	AssertionScheme string `json:"assertionScheme"`
-	// The preferred authentication algorithm supported by the authenticator.
-	AuthenticationAlgorithm uint16 `json:"authenticationAlgorithm"`
 	// The list of authentication algorithms supported by the authenticator.
-	AuthenticationAlgorithms []uint16 `json:"authenticationAlgorithms"`
-	// The preferred public key format used by the authenticator during registration operations.
-	PublicKeyAlgAndEncoding uint16 `json:"publicKeyAlgAndEncoding"`
+	AuthenticationAlgorithms []string `json:"authenticationAlgorithms"`
 	// The list of public key formats supported by the authenticator during registration operations.
-	PublicKeyAlgAndEncodings []uint16 `json:"publicKeyAlgAndEncodings"`
+	PublicKeyAlgAndEncodings []string `json:"publicKeyAlgAndEncodings"`
 	// The supported attestation type(s).
 	// TODO @glacuesta there are other fields that need to be converted to string such as
 	// authenticationAlgorithms, publicKeyAlgAndEncodings, userVertificationDetails, etc
@@ -340,7 +336,7 @@ type MetadataStatement struct {
 	// A list of alternative VerificationMethodANDCombinations.
 	UserVerificationDetails [][]VerificationMethodDescriptor `json:"userVerificationDetails"`
 	// A 16-bit number representing the bit fields defined by the KEY_PROTECTION constants in the FIDO Registry of Predefined Values
-	KeyProtection uint16 `json:"keyProtection"`
+	KeyProtection []string `json:"keyProtection"`
 	// This entry is set to true or it is ommitted, if the Uauth private key is restricted by the authenticator to only sign valid FIDO signature assertions.
 	// This entry is set to false, if the authenticator doesn't restrict the Uauth key to only sign valid FIDO signature assertions.
 	IsKeyRestricted bool `json:"isKeyRestricted"`
@@ -348,17 +344,13 @@ type MetadataStatement struct {
 	// This entry is set to false, if the Uauth key can be used without requiring a fresh user verification, e.g. without any additional user interaction, if the user was verified a (potentially configurable) caching time ago.
 	IsFreshUserVerificationRequired bool `json:"isFreshUserVerificationRequired"`
 	// A 16-bit number representing the bit fields defined by the MATCHER_PROTECTION constants in the FIDO Registry of Predefined Values
-	MatcherProtection uint16 `json:"matcherProtection"`
+	MatcherProtection []string `json:"matcherProtection"`
 	// The authenticator's overall claimed cryptographic strength in bits (sometimes also called security strength or security level).
 	CryptoStrength uint16 `json:"cryptoStrength"`
-	// Description of the particular operating environment that is used for the Authenticator.
-	OperatingEnv string `json:"operatingEnv"`
 	// A 32-bit number representing the bit fields defined by the ATTACHMENT_HINT constants in the FIDO Registry of Predefined Values
-	AttachmentHint uint32 `json:"attachmentHint"`
-	// Indicates if the authenticator is designed to be used only as a second factor, i.e. requiring some other authentication method as a first factor (e.g. username+password).
-	IsSecondFactorOnly bool `json:"isSecondFactorOnly"`
+	AttachmentHint []string `json:"attachmentHint"`
 	// A 16-bit number representing a combination of the bit flags defined by the TRANSACTION_CONFIRMATION_DISPLAY constants in the FIDO Registry of Predefined Values
-	TcDisplay uint16 `json:"tcDisplay"`
+	TcDisplay []string `json:"tcDisplay"`
 	// Supported MIME content type [RFC2049] for the transaction confirmation display, such as text/plain or image/png.
 	TcDisplayContentType string `json:"tcDisplayContentType"`
 	// A list of alternative DisplayPNGCharacteristicsDescriptor. Each of these entries is one alternative of supported image characteristics for displaying a PNG image.
@@ -374,6 +366,44 @@ type MetadataStatement struct {
 	Icon string `json:"icon"`
 	// List of extensions supported by the authenticator.
 	SupportedExtensions []ExtensionDescriptor `json:"supportedExtensions"`
+	// authenticatorGetInfo — Snapshot of authenticatorGetInfo. Relying parties can use it to make informed decisions about FIDO2 authenticators.
+	AuthenticatorGetInfo AuthenticatorGetInfo `json:"authenticatorGetInfo"`
+}
+
+// AuthenticatorGetInfo — Snapshot of authenticatorGetInfo. Relying parties can use it to make informed decisions about FIDO2 authenticators.
+type AuthenticatorGetInfo struct {
+	Versions                     []string    `json:"versions"`
+	Extensions                   []string    `json:"extensions"`
+	Aaguid                       string      `json:"aaguid"`
+	Options                      []Option    `json:"options"`
+	MaxMsgSize                   uint32      `json:"maxMsgSize"`
+	PinUvAuthProtocols           []uint32    `json:"pinUvAuthProtocols"`
+	MaxCredentialCountInList     uint32      `json:"maxCredentialCountInList"`
+	MaxCredentialIdLength        uint32      `json:"maxCredentialIdLength"`
+	Transports                   []string    `json:"transports"`
+	Algorithms                   []Algorithm `json:"algorithms"`
+	MaxAuthenticatorConfigLength uint32      `json:"maxAuthenticatorConfigLength"`
+	DefaultCredProtect           uint32      `json:"defaultCredProtect"`
+	FirmwareVersion              uint32      `json:"firmwareVersion"`
+}
+
+// PublicKeyCredentialParameters
+type Algorithm struct {
+	Type string `json:"type"`
+	Alg  uint32 `json:"alg"`
+}
+
+// List of supported options - optional
+// All options are in the form key-value pairs with string IDs and boolean values.
+// https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo
+type Option struct {
+	Plat      bool `json:"plat"`
+	Rk        bool `json:"rk"`
+	ClientPin bool `json:"clientPin"`
+	Up        bool `json:"up"`
+	Uv        bool `json:"uv"`
+	UvToken   bool `json:"uvToken"`
+	Config    bool `json:"config"`
 }
 
 // MDSGetEndpointsRequest is the request sent to the conformance metadata getEndpoints endpoint
