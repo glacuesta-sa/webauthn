@@ -8,7 +8,10 @@ import (
 	"github.com/duo-labs/webauthn/protocol/webauthncbor"
 )
 
-var minAuthDataLength = 37
+var (
+	minAuthDataLength     = 37
+	minAttestedAuthLength = 55
+)
 
 // Authenticators respond to Relying Party requests by returning an object derived from the
 // AuthenticatorResponse interface. See §5.2. Authenticator Responses
@@ -47,7 +50,7 @@ type AttestedCredentialData struct {
 	CredentialPublicKey []byte `json:"public_key"`
 }
 
-// AuthenticatorAttachment https://www.w3.org/TR/webauthn/#platform-attachment
+// AuthenticatorAttachment https://www.w3.org/TR/webauthn/#dom-authenticatorselectioncriteria-authenticatorattachment
 type AuthenticatorAttachment string
 
 const (
@@ -60,6 +63,21 @@ const (
 	// among, client devices. A public key credential bound to a roaming authenticator is called a
 	// roaming credential.
 	CrossPlatform AuthenticatorAttachment = "cross-platform"
+)
+
+// ResidentKeyRequirement https://www.w3.org/TR/webauthn/#dom-authenticatorselectioncriteria-residentkey
+type ResidentKeyRequirement string
+
+const (
+	// ResidentKeyRequirementDiscouraged indicates to the client we do not want a discoverable credential. This is the default.
+	ResidentKeyRequirementDiscouraged ResidentKeyRequirement = "discouraged"
+
+	// ResidentKeyRequirementPreferred indicates to the client we would prefer a discoverable credential.
+	ResidentKeyRequirementPreferred ResidentKeyRequirement = "preferred"
+
+	// ResidentKeyRequirementRequired indicates to the client we require a discoverable credential and that it should
+	// fail if the credential does not support this feature.
+	ResidentKeyRequirementRequired ResidentKeyRequirement = "required"
 )
 
 // Authenticators may implement various transports for communicating with clients. This enumeration defines
@@ -159,8 +177,11 @@ func (a *AuthenticatorData) Unmarshal(rawAuthData []byte) error {
 	remaining := len(rawAuthData) - minAuthDataLength
 
 	if a.Flags.HasAttestedCredentialData() {
-		if len(rawAuthData) > minAuthDataLength {
-			a.unmarshalAttestedData(rawAuthData)
+		if len(rawAuthData) > minAttestedAuthLength {
+			validError := a.unmarshalAttestedData(rawAuthData)
+			if validError != nil {
+				return validError
+			}
 			attDataLen := len(a.AttData.AAGUID) + 2 + len(a.AttData.CredentialID) + len(a.AttData.CredentialPublicKey)
 			remaining = remaining - attDataLen
 		} else {
@@ -189,11 +210,19 @@ func (a *AuthenticatorData) Unmarshal(rawAuthData []byte) error {
 }
 
 // If Attestation Data is present, unmarshall that into the appropriate public key structure
-func (a *AuthenticatorData) unmarshalAttestedData(rawAuthData []byte) {
+func (a *AuthenticatorData) unmarshalAttestedData(rawAuthData []byte) error {
 	a.AttData.AAGUID = rawAuthData[37:53]
 	idLength := binary.BigEndian.Uint16(rawAuthData[53:55])
+	if len(rawAuthData) < int(55+idLength) {
+		return ErrBadRequest.WithDetails("Authenticator attestation data length too short")
+	}
+	if idLength > 1023 {
+		return ErrBadRequest.WithDetails("Authenticator attestation data credential id length too long")
+	}
+
 	a.AttData.CredentialID = rawAuthData[55 : 55+idLength]
 	a.AttData.CredentialPublicKey = unmarshalCredentialPublicKey(rawAuthData[55+idLength:])
+	return nil
 }
 
 // Unmarshall the credential's Public Key into CBOR encoding
