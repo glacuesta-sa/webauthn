@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/duo-labs/webauthn/metadata"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/mitchellh/mapstructure"
 )
@@ -145,11 +146,10 @@ func verifySafetyNetFormat(att AttestationObject, clientDataHash []byte) (string
 		// TODO: Make this user configurable
 		msg := "SafetyNet response with timestamp before one minute ago"
 
-		// TODO @glacuesta
-		// conformance tools asks timestampMs older than 1 minute throw an error
-		//if metadata.Conformance {
-		return "Basic attestation with SafetyNet", nil, ErrInvalidAttestation.WithDetails(msg)
-		//}
+		// TODO: set it to true in standard endpoints
+		if metadata.Conformance {
+			return "Basic attestation with SafetyNet", nil, ErrInvalidAttestation.WithDetails(msg)
+		}
 	}
 
 	// §8.5.7 If successful, return implementation-specific values representing attestation type Basic and attestation
