@@ -181,7 +181,7 @@ func defaultRegistrationCredentialParameters() []protocol.CredentialParameter {
 		},
 		{
 			Type:      protocol.PublicKeyCredentialType,
-			Algorithm: webauthncose.RS1,
+			Algorithm: webauthncose.AlgRS1,
 		},
 	}
 }
